@@ -14,8 +14,10 @@ export class AuthService {
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.userService.findByEmail(email);
-    if (user) {
+    console.log('User found:', user); // Debugging: Log the user details
+    if (user && user.password) {
       const isPasswordMatching = await bcrypt.compare(pass, user.password);
+      console.log('Password match status:', isPasswordMatching); // Debugging: Log the password match status
       if (isPasswordMatching) {
         const { password, ...result } = user;
         return result;
@@ -38,27 +40,22 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const { email, password, name } = registerDto;
 
-    // Debugging: Log the password to ensure it's not undefined
-    console.log('Password before hashing:', password);
-
-    // Check if password is defined and is a string
-    if (typeof password !== 'string' || password.trim() === '') {
-      throw new HttpException('Password is required and cannot be empty', HttpStatus.BAD_REQUEST);
-    }
+    console.log('Registering with password:', password); // Debugging: Log the plain password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log('Hashed password:', hashedPassword); // Debugging: Log the hashed password
 
     try {
-      // Assuming the salt rounds are correctly specified as 10
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      return this.userService.create({
+      const newUser = await this.userService.create({
         email,
         password: hashedPassword,
         name,
       });
+
+      const { password: _, ...result } = newUser;
+      return result; // Exclude password from the result sent to client
     } catch (error) {
       console.error('Error during hashing or user creation:', error);
       throw new HttpException('Failed to register user', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
-
 }

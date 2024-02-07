@@ -12,40 +12,39 @@ export class UserService {
 
     async create(createUserDto: CreateUserDto) {
         const { email, password, name } = createUserDto;
-
+      
         // Verify if the email already exists in the database
         const existingUser = await this.prisma.user.findUnique({
-            where: { email },
+          where: { email },
         });
         if (existingUser) {
-            throw new HttpException('User already exists with this email', HttpStatus.BAD_REQUEST);
+          throw new HttpException('User already exists with this email', HttpStatus.BAD_REQUEST);
         }
-
-        // Hash the password before storing it in the database
-        const hashedPassword = await bcrypt.hash(password, 10);
-
+      
+        // Remove the password hashing here since it's already hashed
+      
         try {
-            // Create the user with hashed password
-            const user = await this.prisma.user.create({
-                data: {
-                    email,
-                    password: hashedPassword,
-                    name,
-                },
-                select: {
-                    id: true,
-                    email: true,
-                    name: true,
-                    password: true, // Include the password property in the selection
-                },
-            });
-
-            return user;
+          // Create the user with the password that is already hashed
+          const user = await this.prisma.user.create({
+            data: {
+              email,
+              password, // Use the hashed password directly
+              name,
+            },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              password: true, // Include the password property in the selection
+            },
+          });
+      
+          return user;
         } catch (error) {
-            throw new HttpException('Failed to create user', HttpStatus.INTERNAL_SERVER_ERROR);
+          throw new HttpException('Failed to create user', HttpStatus.INTERNAL_SERVER_ERROR);
         }
-    }
-
+      }
+      
     async findAll() {
         return this.prisma.user.findMany({
             select: {
